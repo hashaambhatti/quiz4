@@ -120,6 +120,26 @@ export default function PhoneAuthScreen({ navigation }) {
         setSuccessMessage(`OTP code has been sent via SMS to ${fullPhone}`);
       } else {
         if (
+          result.rawError === 'BILLING_NOT_ENABLED' ||
+          (result.error && result.error.includes('Blaze'))
+        ) {
+          Alert.alert(
+            'Firebase SMS Billing Required',
+            'Phone Provider is ENABLED! However, Firebase requires the Blaze (Pay-as-you-go) plan to send real SMS.\n\nTo test for free:\n• Turn on Demo Mode below (Recommended)\n• Or add your number in Firebase Console -> Authentication -> Phone -> "Phone numbers for testing".',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Switch to Demo Mode',
+                onPress: () => {
+                  setIsDemoMode(true);
+                  setErrorMessage(
+                    'Demo Mode enabled! Tap "Send Verification SMS" to test the full OTP flow.'
+                  );
+                },
+              },
+            ]
+          );
+        } else if (
           result.rawError === 'OPERATION_NOT_ALLOWED' ||
           (result.error && result.error.includes('Firebase Console'))
         ) {

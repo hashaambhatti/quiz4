@@ -85,6 +85,12 @@ export function AuthProvider({ children }) {
       return 'Too many failed attempts. Please try again later.';
     }
     if (
+      errorStr.includes('billing-not-enabled') ||
+      errorStr.includes('BILLING_NOT_ENABLED')
+    ) {
+      return 'Firebase requires the Blaze (Pay-as-you-go) plan to send real SMS. To test for free: add a number under Firebase Console -> Authentication -> Phone -> "Phone numbers for testing", or enable Demo Mode below.';
+    }
+    if (
       errorStr.includes('operation-not-allowed') ||
       errorStr.includes('OPERATION_NOT_ALLOWED')
     ) {

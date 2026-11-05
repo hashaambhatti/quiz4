@@ -6,7 +6,7 @@ export default function HomeScreen() {
   const { user, signOutUser } = useContext(AuthContext);
 
   const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to log out of your session?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: () => signOutUser() },
     ]);
@@ -15,63 +15,72 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>
-              {user?.phoneNumber ? '📱' : user?.email ? user.email.charAt(0).toUpperCase() : '👤'}
-            </Text>
+        {/* Top Status Header */}
+        <View style={styles.statusPillTop}>
+          <Text style={styles.statusDotTop}>●</Text>
+          <Text style={styles.statusTextTop}>AUTHENTICATED SESSION</Text>
+        </View>
+
+        {/* Avatar Hero */}
+        <View style={styles.avatarHero}>
+          <View style={styles.avatarGlowRing}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarEmoji}>
+                {user?.phoneNumber ? '📱' : user?.email ? user.email.charAt(0).toUpperCase() : '👤'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedBadgeText}>✓ Verified</Text>
+          <View style={styles.verifiedFloatingBadge}>
+            <Text style={styles.verifiedFloatingText}>✓ Verified</Text>
           </View>
         </View>
 
-        <Text style={styles.welcomeTitle}>Authentication Successful</Text>
-        <Text style={styles.welcomeSubtitle}>
-          You have successfully verified and logged into your account.
+        <Text style={styles.userNameTitle}>
+          {user?.phoneNumber || user?.email || 'User'}
+        </Text>
+        <Text style={styles.userSubtitle}>
+          Authentication completed via {user?.phoneNumber ? 'SMS OTP' : 'Email credentials'}.
         </Text>
 
-        <View style={styles.profileCard}>
-          <Text style={styles.cardHeader}>Account Details</Text>
+        {/* Modern Detail Card */}
+        <View style={styles.detailCard}>
+          <Text style={styles.detailCardHeader}>Session Identity</Text>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status</Text>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusPillText}>Authenticated</Text>
+          <View style={styles.tileRow}>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>Auth Provider</Text>
+              <Text style={styles.tileValue}>
+                {user?.phoneNumber ? 'Phone SMS' : 'Email'}
+              </Text>
+            </View>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>Status</Text>
+              <Text style={[styles.tileValue, { color: '#059669' }]}>Active ✓</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.infoDivider} />
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
+          <View style={styles.fullRow}>
+            <Text style={styles.fullRowLabel}>
               {user?.phoneNumber ? 'Verified Phone' : 'Email Address'}
             </Text>
-            <Text style={styles.infoValue}>
-              {user?.phoneNumber || user?.email || 'N/A'}
+            <Text style={styles.fullRowValue}>
+              {user?.phoneNumber || user?.email}
             </Text>
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.infoDivider} />
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Auth Method</Text>
-            <Text style={styles.infoValue}>
-              {user?.phoneNumber ? 'Phone OTP (SMS)' : 'Email & Password'}
-            </Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoColumn}>
-            <Text style={styles.infoLabel}>User UID</Text>
-            <Text style={styles.uidText}>{user?.uid}</Text>
+          <View style={styles.fullRow}>
+            <Text style={styles.fullRowLabel}>Firebase UID</Text>
+            <Text style={styles.uidMonospace}>{user?.uid}</Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        {/* Sign Out Button */}
+        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+          <Text style={styles.signOutBtnText}>Log Out from Session</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -85,49 +94,79 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 30,
     alignItems: 'center',
-    padding: 24,
+    justifyContent: 'center',
   },
-  avatarContainer: {
+  statusPillTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  statusDotTop: {
+    color: '#059669',
+    fontSize: 10,
+    marginRight: 6,
+  },
+  statusTextTop: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.8,
+  },
+  avatarHero: {
     alignItems: 'center',
     marginBottom: 16,
+  },
+  avatarGlowRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 3,
+    borderColor: '#FDE68A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 4,
   },
   avatarCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 2.5,
-    borderColor: '#FDE68A',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 3,
   },
-  avatarText: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#78350F',
+  avatarEmoji: {
+    fontSize: 36,
   },
-  verifiedBadge: {
+  verifiedFloatingBadge: {
     backgroundColor: '#D1FAE5',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#A7F3D0',
     borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginTop: -10,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: -14,
   },
-  verifiedBadgeText: {
+  verifiedFloatingText: {
     color: '#065F46',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  welcomeTitle: {
+  userNameTitle: {
     fontSize: 24,
     fontWeight: '800',
     color: '#292524',
@@ -135,29 +174,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.3,
   },
-  welcomeSubtitle: {
+  userSubtitle: {
     fontSize: 14,
     color: '#78716C',
     textAlign: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 16,
-    lineHeight: 20,
+    marginBottom: 26,
+    paddingHorizontal: 20,
   },
-  profileCard: {
+  detailCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1.5,
     borderColor: '#FEF3C7',
     shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowRadius: 20,
+    elevation: 4,
+    marginBottom: 24,
   },
-  cardHeader: {
+  detailCardHeader: {
     fontSize: 12,
     fontWeight: '800',
     color: '#B45309',
@@ -165,68 +203,68 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 16,
   },
-  infoRow: {
+  tileRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
+    gap: 12,
+    marginBottom: 14,
   },
-  infoColumn: {
-    paddingVertical: 8,
+  tile: {
+    flex: 1,
+    backgroundColor: '#FFFDF5',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
   },
-  infoLabel: {
-    fontSize: 13,
-    color: '#78716C',
-    fontWeight: '600',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#1C1917',
-    fontWeight: '700',
-  },
-  uidText: {
+  tileLabel: {
     fontSize: 12,
-    color: '#A8A29E',
-    marginTop: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '600',
+    color: '#78716C',
+    marginBottom: 4,
   },
-  divider: {
+  tileValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1C1917',
+  },
+  infoDivider: {
     height: 1,
     backgroundColor: '#FEF3C7',
-    marginVertical: 4,
+    marginVertical: 10,
   },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  fullRow: {
+    paddingVertical: 6,
   },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#D97706',
-    marginRight: 6,
-  },
-  statusPillText: {
+  fullRowLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
+    fontWeight: '600',
+    color: '#78716C',
+    marginBottom: 4,
   },
-  signOutButton: {
+  fullRowValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1C1917',
+  },
+  uidMonospace: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#A8A29E',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginTop: 2,
+  },
+  signOutBtn: {
     width: '100%',
     backgroundColor: '#FEF2F2',
     borderWidth: 1.5,
     borderColor: '#FECACA',
-    paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
+    paddingVertical: 15,
     alignItems: 'center',
   },
-  signOutButtonText: {
+  signOutBtnText: {
     color: '#DC2626',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

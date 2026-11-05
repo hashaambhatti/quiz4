@@ -43,14 +43,34 @@ export default function SignInScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.iconSymbol}>🔐</Text>
-          </View>
-          <Text style={styles.title}>Account Login</Text>
-          <Text style={styles.subtitle}>Sign in with your email or proceed with phone verification</Text>
+        {/* Top Segmented Navigation Tab */}
+        <View style={styles.topSegmentedBar}>
+          <TouchableOpacity
+            style={styles.segmentTab}
+            onPress={() => navigation.navigate('PhoneAuth')}
+          >
+            <Text style={styles.segmentTabText}>📱 Phone OTP</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.segmentTab, styles.segmentTabActive]}>
+            <Text style={[styles.segmentTabText, styles.segmentTabTextActive]}>
+              ✉️ Email Login
+            </Text>
+          </TouchableOpacity>
         </View>
 
+        {/* Hero Header */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeDot}>●</Text>
+            <Text style={styles.heroBadgeText}>EMAIL ACCESS</Text>
+          </View>
+          <Text style={styles.heroTitle}>Welcome Back</Text>
+          <Text style={styles.heroSubtitle}>
+            Sign in with your email account or use the phone verification tab above.
+          </Text>
+        </View>
+
+        {/* Card */}
         <View style={styles.card}>
           {errorMessage ? (
             <View style={styles.errorBanner}>
@@ -60,28 +80,30 @@ export default function SignInScreen({ navigation }) {
           ) : null}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="name@example.com"
-              placeholderTextColor="#A8A29E"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errorMessage) setErrorMessage('');
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.textInputField}
+                placeholder="name@example.com"
+                placeholderTextColor="#A8A29E"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.inputBox}>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="Enter your password"
+                style={styles.textInputField}
+                placeholder="Enter password"
                 placeholderTextColor="#A8A29E"
                 value={password}
                 onChangeText={(text) => {
@@ -93,7 +115,7 @@ export default function SignInScreen({ navigation }) {
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
-                style={styles.showHideButton}
+                style={styles.showHideToggle}
               >
                 <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
               </TouchableOpacity>
@@ -101,36 +123,36 @@ export default function SignInScreen({ navigation }) {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+            style={[styles.primaryActionBtn, loading && styles.btnDisabled]}
             onPress={handleSignIn}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.primaryButtonText}>Sign In</Text>
+              <Text style={styles.primaryActionText}>Sign In with Email →</Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.dividerContainer}>
+          <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>OR</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Quick switch to Phone OTP Verification */}
+          {/* Quick Switch to Phone Auth */}
           <TouchableOpacity
-            style={styles.phoneButton}
+            style={styles.phoneSwitchBtn}
             onPress={() => navigation.navigate('PhoneAuth')}
           >
-            <Text style={styles.phoneButtonText}>📱 Verify via Phone OTP (SMS)</Text>
+            <Text style={styles.phoneSwitchText}>📱 Use Phone SMS Verification Instead</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.footerMuted}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>Create Account</Text>
+            <Text style={styles.footerLink}>Register</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -145,51 +167,92 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 55 : 35,
+    paddingBottom: 30,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  topSegmentedBar: {
+    flexDirection: 'row',
     backgroundColor: '#FEF3C7',
-    borderWidth: 2,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 24,
+    borderWidth: 1,
     borderColor: '#FDE68A',
-    justifyContent: 'center',
+  },
+  segmentTab: {
+    flex: 1,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginBottom: 12,
+    borderRadius: 10,
   },
-  iconSymbol: {
-    fontSize: 28,
+  segmentTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  title: {
-    fontSize: 26,
+  segmentTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#78716C',
+  },
+  segmentTabTextActive: {
+    color: '#92400E',
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  heroBadgeDot: {
+    fontSize: 9,
+    color: '#D97706',
+    marginRight: 6,
+  },
+  heroBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    fontSize: 27,
     fontWeight: '800',
     color: '#292524',
-    marginBottom: 6,
-    letterSpacing: -0.3,
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
-  subtitle: {
+  heroSubtitle: {
     fontSize: 14,
     color: '#78716C',
     textAlign: 'center',
-    paddingHorizontal: 16,
     lineHeight: 20,
+    paddingHorizontal: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 22,
     borderWidth: 1.5,
     borderColor: '#FEF3C7',
     shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowRadius: 20,
     elevation: 4,
   },
   errorBanner: {
@@ -199,7 +262,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 16,
   },
   bannerIcon: {
@@ -215,70 +278,63 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 16,
   },
-  label: {
+  inputLabel: {
     fontSize: 13,
     fontWeight: '700',
     color: '#44403C',
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: 0.2,
   },
-  input: {
-    backgroundColor: '#FFFDF5',
-    borderWidth: 1.5,
-    borderColor: '#FDE68A',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#1C1917',
-  },
-  passwordContainer: {
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFDF5',
     borderWidth: 1.5,
     borderColor: '#FDE68A',
-    borderRadius: 12,
-  },
-  passwordInput: {
-    flex: 1,
+    borderRadius: 16,
+    height: 52,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+  },
+  textInputField: {
+    flex: 1,
     fontSize: 15,
     color: '#1C1917',
+    fontWeight: '500',
   },
-  showHideButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  showHideToggle: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   showHideText: {
     color: '#D97706',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  primaryButton: {
+  primaryActionBtn: {
     backgroundColor: '#D97706',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 8,
     shadowColor: '#D97706',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
     elevation: 3,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  btnDisabled: {
+    opacity: 0.5,
   },
-  primaryButtonText: {
+  primaryActionText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  dividerContainer: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 18,
   },
   dividerLine: {
     flex: 1,
@@ -291,32 +347,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  phoneButton: {
+  phoneSwitchBtn: {
     backgroundColor: '#FEF3C7',
     borderWidth: 1.5,
     borderColor: '#FDE68A',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 13,
     alignItems: 'center',
   },
-  phoneButtonText: {
+  phoneSwitchText: {
     color: '#92400E',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  footer: {
+  footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 22,
+    marginTop: 24,
   },
-  footerText: {
+  footerMuted: {
     color: '#78716C',
     fontSize: 14,
   },
-  linkText: {
+  footerLink: {
     color: '#D97706',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });
