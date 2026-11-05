@@ -26,7 +26,7 @@ const COUNTRY_CODES = [
 ];
 
 export default function PhoneAuthScreen({ navigation }) {
-  const { sendPhoneOtp, verifyPhoneOtp, continueAsGuest } = useContext(AuthContext);
+  const { sendPhoneOtp, verifyPhoneOtp } = useContext(AuthContext);
 
   // Flow step: 1 = Phone Number Entry, 2 = OTP Verification
   const [step, setStep] = useState(1);
@@ -69,7 +69,6 @@ export default function PhoneAuthScreen({ navigation }) {
     if (clean.startsWith('+')) {
       return clean;
     }
-    // Remove leading 0 if present (common local dialing prefix)
     if (clean.startsWith('0')) {
       clean = clean.substring(1);
     }
@@ -91,7 +90,6 @@ export default function PhoneAuthScreen({ navigation }) {
       return;
     }
 
-    // On native mobile (not web), if not demo mode and no token yet, trigger reCAPTCHA modal
     if (Platform.OS !== 'web' && !isDemoMode && !token) {
       setRecaptchaVisible(true);
       return;
@@ -109,27 +107,25 @@ export default function PhoneAuthScreen({ navigation }) {
           setConfirmationResult(result.confirmationResult);
         }
 
-        // Show SMS simulation badge if demo mode or demo code provided
         if (result.demoCode) {
           setSimulatedSms(result.demoCode);
         }
 
         setStep(2);
         setCountdown(60);
-        setSuccessMessage(`OTP sent via SMS to ${fullPhone}`);
+        setSuccessMessage(`OTP code sent via SMS to ${fullPhone}`);
       } else {
-        // If Firebase rejected because Phone provider is disabled, suggest Demo Mode
         if (
           result.rawError === 'OPERATION_NOT_ALLOWED' ||
           (result.error && result.error.includes('Firebase Console'))
         ) {
           Alert.alert(
-            'Firebase Phone Auth Setup',
+            'Firebase Phone Provider Notice',
             'Phone Authentication is not enabled yet in your Firebase Console for project "axeonic-be83b".\n\nWould you like to switch to Demo Mode to test the OTP flow right now?',
             [
               { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Switch to Demo Mode',
+                text: 'Enable Demo Mode',
                 onPress: () => {
                   setIsDemoMode(true);
                   setErrorMessage(
@@ -178,7 +174,7 @@ export default function PhoneAuthScreen({ navigation }) {
       Alert.alert(
         'Verification Successful',
         `Phone number ${fullPhone} has been verified successfully!`,
-        [{ text: 'Continue to App', style: 'default' }]
+        [{ text: 'Continue', style: 'default' }]
       );
     } else {
       setErrorMessage(result.error || 'Verification Failed: Invalid OTP code.');
@@ -213,12 +209,14 @@ export default function PhoneAuthScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.appTitle}>📚 Book Library</Text>
-          <Text style={styles.title}>Phone Authentication</Text>
+          <View style={styles.iconCircle}>
+            <Text style={styles.iconSymbol}>📱</Text>
+          </View>
+          <Text style={styles.title}>Phone Verification</Text>
           <Text style={styles.subtitle}>
             {step === 1
-              ? 'Enter your phone number to receive a verification OTP'
-              : 'Enter the 6-digit verification code sent via SMS'}
+              ? 'Enter your mobile number to receive an SMS verification code'
+              : 'Enter the 6-digit verification code sent to your phone'}
           </Text>
         </View>
 
@@ -241,25 +239,25 @@ export default function PhoneAuthScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* Main Card */}
+        {/* Card */}
         <View style={styles.card}>
-          {/* Success Message Banner */}
+          {/* Success Banner */}
           {successMessage ? (
             <View style={styles.successBanner}>
-              <Text style={styles.successIcon}>✅</Text>
+              <Text style={styles.bannerIcon}>✅</Text>
               <Text style={styles.successText}>{successMessage}</Text>
             </View>
           ) : null}
 
-          {/* Error Message Banner */}
+          {/* Error Banner */}
           {errorMessage ? (
             <View style={styles.errorBanner}>
-              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.bannerIcon}>⚠️</Text>
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           ) : null}
 
-          {/* Simulated SMS Notification Banner */}
+          {/* Simulated SMS Badge */}
           {simulatedSms ? (
             <TouchableOpacity
               style={styles.smsBanner}
@@ -268,11 +266,11 @@ export default function PhoneAuthScreen({ navigation }) {
             >
               <View style={styles.smsHeader}>
                 <Text style={styles.smsIcon}>💬</Text>
-                <Text style={styles.smsTitle}>New SMS Message</Text>
+                <Text style={styles.smsTitle}>Simulated SMS Received</Text>
                 <Text style={styles.smsTapToFill}>Tap to auto-fill</Text>
               </View>
               <Text style={styles.smsBody}>
-                Your verification code is: <Text style={styles.smsCode}>{simulatedSms}</Text>
+                Verification Code: <Text style={styles.smsCode}>{simulatedSms}</Text>
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -282,8 +280,8 @@ export default function PhoneAuthScreen({ navigation }) {
             <View>
               <Text style={styles.sectionHeading}>Step 1: Enter Phone Number</Text>
 
-              {/* Country Code Selector Buttons */}
-              <Text style={styles.label}>Select Country Prefix</Text>
+              {/* Country Code Selector */}
+              <Text style={styles.label}>Country Prefix</Text>
               <View style={styles.countryRow}>
                 {COUNTRY_CODES.map((item) => (
                   <TouchableOpacity
@@ -316,7 +314,7 @@ export default function PhoneAuthScreen({ navigation }) {
                   <TextInput
                     style={styles.phoneInput}
                     placeholder="650 555 3434"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor="#A8A29E"
                     value={phoneNumber}
                     onChangeText={(text) => {
                       setPhoneNumber(text);
@@ -335,16 +333,16 @@ export default function PhoneAuthScreen({ navigation }) {
                   ) : null}
                 </View>
                 <Text style={styles.helperText}>
-                  Full Number: <Text style={styles.helperPhone}>{getFullPhoneNumber()}</Text>
+                  Formatted: <Text style={styles.helperPhone}>{getFullPhoneNumber()}</Text>
                 </Text>
               </View>
 
-              {/* Quick Test Number Helper */}
+              {/* Quick Fill Test Number */}
               <TouchableOpacity style={styles.testNumberBtn} onPress={handleFillTestNumber}>
                 <Text style={styles.testNumberBtnText}>🧪 Use Test Number (+1 650 555 3434)</Text>
               </TouchableOpacity>
 
-              {/* Send OTP Button (Requirement 2) */}
+              {/* Request OTP Button */}
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
                 onPress={() => handleRequestOtp()}
@@ -352,11 +350,11 @@ export default function PhoneAuthScreen({ navigation }) {
               >
                 {loading ? (
                   <View style={styles.buttonLoadingRow}>
-                    <ActivityIndicator color="#fff" size="small" />
+                    <ActivityIndicator color="#FFFFFF" size="small" />
                     <Text style={styles.primaryButtonText}> Requesting SMS OTP...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.primaryButtonText}>📲 Request OTP via SMS</Text>
+                  <Text style={styles.primaryButtonText}>Request OTP via SMS</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -367,21 +365,21 @@ export default function PhoneAuthScreen({ navigation }) {
                 <View>
                   <Text style={styles.sectionHeading}>Step 2: Enter Received OTP</Text>
                   <Text style={styles.sentToText}>
-                    Sent to: <Text style={styles.sentToPhone}>{getFullPhoneNumber()}</Text>
+                    Code sent to: <Text style={styles.sentToPhone}>{getFullPhoneNumber()}</Text>
                   </Text>
                 </View>
                 <TouchableOpacity onPress={handleEditPhoneNumber} style={styles.editPhoneBtn}>
-                  <Text style={styles.editPhoneBtnText}>✏️ Edit</Text>
+                  <Text style={styles.editPhoneBtnText}>✏️ Change</Text>
                 </TouchableOpacity>
               </View>
 
               {/* 6-Digit OTP Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>6-Digit Verification Code</Text>
+                <Text style={styles.label}>6-Digit OTP Code</Text>
                 <TextInput
                   style={styles.otpInput}
                   placeholder="• • • • • •"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#D97706"
                   value={otpCode}
                   onChangeText={(text) => {
                     const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
@@ -395,7 +393,7 @@ export default function PhoneAuthScreen({ navigation }) {
                 <Text style={styles.helperText}>Enter the 6-digit code received via SMS</Text>
               </View>
 
-              {/* Verify OTP Button (Requirement 4) */}
+              {/* Verify OTP Button */}
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
@@ -406,17 +404,17 @@ export default function PhoneAuthScreen({ navigation }) {
               >
                 {loading ? (
                   <View style={styles.buttonLoadingRow}>
-                    <ActivityIndicator color="#fff" size="small" />
-                    <Text style={styles.primaryButtonText}> Verifying OTP Code...</Text>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={styles.primaryButtonText}> Verifying Code...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.primaryButtonText}>✅ Verify OTP Code</Text>
+                  <Text style={styles.primaryButtonText}>Verify OTP Code</Text>
                 )}
               </TouchableOpacity>
 
-              {/* Resend OTP Row */}
+              {/* Resend Row */}
               <View style={styles.resendRow}>
-                <Text style={styles.resendPrompt}>Didn't receive the code? </Text>
+                <Text style={styles.resendPrompt}>Didn't receive the SMS? </Text>
                 {countdown > 0 ? (
                   <Text style={styles.countdownText}>Resend in {countdown}s</Text>
                 ) : (
@@ -428,10 +426,9 @@ export default function PhoneAuthScreen({ navigation }) {
             </View>
           )}
 
-          {/* Web Recaptcha Container Placeholder */}
           {Platform.OS === 'web' ? <div id="recaptcha-container" /> : null}
 
-          {/* Mode Switch Card */}
+          {/* Demo Mode Toggle */}
           <View style={styles.modeCard}>
             <View style={styles.modeRow}>
               <View style={styles.modeTextContainer}>
@@ -439,7 +436,7 @@ export default function PhoneAuthScreen({ navigation }) {
                 <Text style={styles.modeDescription}>
                   {isDemoMode
                     ? 'Simulates SMS locally (Code: 123456)'
-                    : 'Uses real Firebase SMS (requires Phone enabled in Console)'}
+                    : 'Real Firebase SMS (requires Phone provider enabled)'}
                 </Text>
               </View>
               <Switch
@@ -449,8 +446,8 @@ export default function PhoneAuthScreen({ navigation }) {
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
-                trackColor={{ false: '#d1d5db', true: '#93c5fd' }}
-                thumbColor={isDemoMode ? '#2563eb' : '#f3f4f6'}
+                trackColor={{ false: '#E5E7EB', true: '#FDE68A' }}
+                thumbColor={isDemoMode ? '#D97706' : '#F5F5F4'}
               />
             </View>
           </View>
@@ -462,34 +459,25 @@ export default function PhoneAuthScreen({ navigation }) {
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Email Login Alternative */}
+          {/* Navigate to Login Page */}
           <TouchableOpacity
-            style={styles.secondaryNavButton}
+            style={styles.secondaryButton}
             onPress={() => navigation.navigate('SignIn')}
           >
-            <Text style={styles.secondaryNavButtonText}>✉️ Sign In with Email & Password</Text>
-          </TouchableOpacity>
-
-          {/* Guest Mode */}
-          <TouchableOpacity
-            style={styles.guestButton}
-            onPress={continueAsGuest}
-            disabled={loading}
-          >
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            <Text style={styles.secondaryButtonText}>✉️ Go to Email Login</Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>New to Book Library? </Text>
+          <Text style={styles.footerText}>Need an email account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>Create Account</Text>
+            <Text style={styles.linkText}>Register</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* ReCAPTCHA Modal for Native Mobile */}
+      {/* Recaptcha Modal */}
       <FirebaseRecaptchaModal
         visible={recaptchaVisible}
         firebaseConfig={firebaseConfig}
@@ -509,7 +497,7 @@ export default function PhoneAuthScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFDF5',
   },
   scrollContent: {
     flexGrow: 1,
@@ -520,24 +508,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  appTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 6,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  iconSymbol: {
+    fontSize: 30,
   },
   title: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#292524',
     marginBottom: 6,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#78716C',
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    lineHeight: 20,
   },
   stepIndicatorContainer: {
     flexDirection: 'row',
@@ -549,29 +547,32 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#F5F5F4',
+    borderWidth: 1.5,
+    borderColor: '#E7E5E4',
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepDotActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#D97706',
+    borderColor: '#B45309',
   },
   stepDotText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: '#A8A29E',
   },
   stepDotTextActive: {
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
   stepLine: {
     width: 60,
     height: 3,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#E7E5E4',
     marginHorizontal: 8,
   },
   stepLineActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#D97706',
   },
   stepLabels: {
     flexDirection: 'row',
@@ -582,75 +583,71 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: '#A8A29E',
   },
   stepLabelActive: {
-    color: '#2563eb',
+    color: '#B45309',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 1.5,
+    borderColor: '#FEF3C7',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    shadowRadius: 16,
+    elevation: 4,
   },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: '#292524',
     marginBottom: 14,
   },
   successBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: '#F0FDF4',
     borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+    borderLeftColor: '#10B981',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
-  },
-  successIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  successText: {
-    color: '#065f46',
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#FEF2F2',
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: '#EF4444',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
-  errorIcon: {
+  bannerIcon: {
     fontSize: 16,
     marginRight: 8,
   },
+  successText: {
+    color: '#065F46',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
   errorText: {
-    color: '#991b1b',
+    color: '#991B1B',
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
     lineHeight: 18,
   },
   smsBanner: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
+    backgroundColor: '#FEF9C3',
+    borderWidth: 1.5,
+    borderColor: '#FDE047',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
@@ -666,22 +663,22 @@ const styles = StyleSheet.create({
   smsTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#854D0E',
     flex: 1,
   },
   smsTapToFill: {
     fontSize: 11,
-    color: '#2563eb',
-    fontWeight: '600',
+    color: '#B45309',
+    fontWeight: '700',
   },
   smsBody: {
     fontSize: 13,
-    color: '#1e3a8a',
+    color: '#713F12',
   },
   smsCode: {
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 2,
-    color: '#1d4ed8',
+    color: '#B45309',
   },
   countryRow: {
     flexDirection: 'row',
@@ -691,61 +688,63 @@ const styles = StyleSheet.create({
   },
   countryChip: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#FFFBEB',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#FDE68A',
   },
   countryChipSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#2563eb',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#D97706',
   },
   countryChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4b5563',
+    color: '#78716C',
   },
   countryChipTextSelected: {
-    color: '#2563eb',
+    color: '#92400E',
+    fontWeight: '700',
   },
   inputGroup: {
     marginBottom: 16,
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#44403C',
     marginBottom: 6,
   },
   phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
   },
   prefixBox: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
-    backgroundColor: '#f3f4f6',
+    borderRightWidth: 1.5,
+    borderRightColor: '#FDE68A',
+    backgroundColor: '#FEF3C7',
     borderTopLeftRadius: 10,
     borderBottomLeftRadius: 10,
   },
   prefixText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '800',
+    color: '#78350F',
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#111827',
+    color: '#1C1917',
+    fontWeight: '500',
   },
   clearBtn: {
     paddingHorizontal: 12,
@@ -753,29 +752,31 @@ const styles = StyleSheet.create({
   },
   clearBtnText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#A8A29E',
     fontWeight: '700',
   },
   helperText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#78716C',
     marginTop: 6,
   },
   helperPhone: {
     fontWeight: '700',
-    color: '#2563eb',
+    color: '#D97706',
   },
   testNumberBtn: {
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   testNumberBtnText: {
     fontSize: 12,
-    color: '#4b5563',
-    fontWeight: '600',
+    color: '#92400E',
+    fontWeight: '700',
   },
   phoneSummaryRow: {
     flexDirection: 'row',
@@ -784,39 +785,41 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#FEF3C7',
   },
   sentToText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#78716C',
     marginTop: 2,
   },
   sentToPhone: {
     fontWeight: '700',
-    color: '#111827',
+    color: '#292524',
   },
   editPhoneBtn: {
     paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     borderRadius: 6,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   editPhoneBtnText: {
     fontSize: 12,
-    color: '#2563eb',
-    fontWeight: '600',
+    color: '#92400E',
+    fontWeight: '700',
   },
   otpInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#FFFDF5',
     borderWidth: 2,
-    borderColor: '#2563eb',
-    borderRadius: 10,
+    borderColor: '#D97706',
+    borderRadius: 12,
     paddingVertical: 14,
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     textAlign: 'center',
     letterSpacing: 10,
-    color: '#111827',
+    color: '#78350F',
   },
   resendRow: {
     flexDirection: 'row',
@@ -826,24 +829,29 @@ const styles = StyleSheet.create({
   },
   resendPrompt: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#78716C',
   },
   countdownText: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: '#A8A29E',
     fontWeight: '600',
   },
   resendLink: {
     fontSize: 13,
-    color: '#2563eb',
+    color: '#D97706',
     fontWeight: '700',
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
+    backgroundColor: '#D97706',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 6,
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
   },
   buttonLoadingRow: {
     flexDirection: 'row',
@@ -853,17 +861,18 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   modeCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
+    backgroundColor: '#FFFDF5',
+    borderRadius: 12,
     padding: 12,
     marginTop: 18,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#FEF3C7',
   },
   modeRow: {
     flexDirection: 'row',
@@ -877,11 +886,11 @@ const styles = StyleSheet.create({
   modeTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#374151',
+    color: '#44403C',
   },
   modeDescription: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#78716C',
     marginTop: 2,
   },
   dividerContainer: {
@@ -892,36 +901,26 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#FEF3C7',
   },
   dividerText: {
     marginHorizontal: 12,
-    color: '#9ca3af',
+    color: '#A8A29E',
     fontSize: 12,
     fontWeight: '600',
   },
-  secondaryNavButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+  secondaryButton: {
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: '#fff',
-    marginBottom: 10,
+    backgroundColor: '#FFFBEB',
   },
-  secondaryNavButtonText: {
-    color: '#374151',
+  secondaryButtonText: {
+    color: '#92400E',
     fontSize: 14,
-    fontWeight: '600',
-  },
-  guestButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  guestButtonText: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
@@ -930,13 +929,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: '#6b7280',
+    color: '#78716C',
     fontSize: 14,
   },
   linkText: {
-    color: '#2563eb',
+    color: '#D97706',
     fontSize: 14,
     fontWeight: '700',
   },
 });
-

@@ -13,7 +13,7 @@ import {
 import { AuthContext } from '../context/AuthContext';
 
 export default function SignUpScreen({ navigation }) {
-  const { signUp, continueAsGuest } = useContext(AuthContext);
+  const { signUp } = useContext(AuthContext);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,14 +56,17 @@ export default function SignUpScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.appTitle}>📚 Book Library</Text>
+          <View style={styles.iconCircle}>
+            <Text style={styles.iconSymbol}>✨</Text>
+          </View>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to start saving and managing your reading list</Text>
+          <Text style={styles.subtitle}>Sign up to access verified features or use phone verification</Text>
         </View>
 
         <View style={styles.card}>
           {errorMessage ? (
             <View style={styles.errorBanner}>
+              <Text style={styles.bannerIcon}>⚠️</Text>
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           ) : null}
@@ -73,7 +76,7 @@ export default function SignUpScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="name@example.com"
-              placeholderTextColor="#999"
+              placeholderTextColor="#A8A29E"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -91,7 +94,7 @@ export default function SignUpScreen({ navigation }) {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="At least 6 characters"
-                placeholderTextColor="#999"
+                placeholderTextColor="#A8A29E"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -115,7 +118,7 @@ export default function SignUpScreen({ navigation }) {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Re-enter your password"
-                placeholderTextColor="#999"
+                placeholderTextColor="#A8A29E"
                 value={confirmPassword}
                 onChangeText={(text) => {
                   setConfirmPassword(text);
@@ -133,17 +136,10 @@ export default function SignUpScreen({ navigation }) {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.primaryButtonText}>Register</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.phoneButton}
-            onPress={() => navigation.navigate('PhoneAuth')}
-          >
-            <Text style={styles.phoneButtonText}>📱 Sign Up with Phone OTP (SMS)</Text>
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
@@ -153,11 +149,10 @@ export default function SignUpScreen({ navigation }) {
           </View>
 
           <TouchableOpacity
-            style={styles.guestButton}
-            onPress={continueAsGuest}
-            disabled={loading}
+            style={styles.phoneButton}
+            onPress={() => navigation.navigate('PhoneAuth')}
           >
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            <Text style={styles.phoneButtonText}>📱 Verify via Phone OTP (SMS)</Text>
           </TouchableOpacity>
         </View>
 
@@ -175,7 +170,7 @@ export default function SignUpScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFDF5',
   },
   scrollContent: {
     flexGrow: 1,
@@ -184,163 +179,172 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
-  appTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  iconSymbol: {
+    fontSize: 28,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#292524',
     marginBottom: 6,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#78716C',
     textAlign: 'center',
+    paddingHorizontal: 16,
+    lineHeight: 20,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    borderWidth: 1.5,
+    borderColor: '#FEF3C7',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    shadowRadius: 16,
+    elevation: 4,
   },
   errorBanner: {
-    backgroundColor: '#fee2e2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: '#EF4444',
     padding: 12,
-    borderRadius: 6,
+    borderRadius: 8,
     marginBottom: 16,
   },
+  bannerIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
   errorText: {
-    color: '#b91c1c',
+    color: '#991B1B',
     fontSize: 13,
     fontWeight: '500',
+    flex: 1,
   },
   inputGroup: {
-    marginBottom: 18,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#44403C',
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#111827',
+    color: '#1C1917',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#111827',
+    color: '#1C1917',
   },
   showHideButton: {
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   showHideText: {
-    color: '#2563eb',
+    color: '#D97706',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
+    backgroundColor: '#D97706',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 6,
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 18,
+    marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#FEF3C7',
   },
   dividerText: {
     marginHorizontal: 12,
-    color: '#9ca3af',
+    color: '#A8A29E',
     fontSize: 12,
     fontWeight: '600',
   },
   phoneButton: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
     paddingVertical: 13,
     alignItems: 'center',
-    marginTop: 12,
   },
   phoneButtonText: {
-    color: '#1d4ed8',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  guestButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  guestButtonText: {
-    color: '#4b5563',
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#92400E',
+    fontSize: 14,
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 22,
   },
   footerText: {
-    color: '#6b7280',
+    color: '#78716C',
     fontSize: 14,
   },
   linkText: {
-    color: '#2563eb',
+    color: '#D97706',
     fontSize: 14,
     fontWeight: '700',
   },
