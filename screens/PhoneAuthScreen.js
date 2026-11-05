@@ -11,48 +11,54 @@ import {
   ScrollView,
   Alert,
   Switch,
+  Modal,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import FirebaseRecaptchaModal from '../components/FirebaseRecaptchaModal';
 import { firebaseConfig } from '../src/firebase';
 
-const COUNTRY_CODES = [
-  { label: '🇺🇸 +1', code: '+1' },
-  { label: '🇵🇰 +92', code: '+92' },
-  { label: '🇬🇧 +44', code: '+44' },
-  { label: '🇮🇳 +91', code: '+91' },
-  { label: '🇦🇺 +61', code: '+61' },
-  { label: '🇨🇦 +1', code: '+1' },
+const COUNTRY_LIST = [
+  { flag: '🇺🇸', name: 'United States', code: '+1' },
+  { flag: '🇵🇰', name: 'Pakistan', code: '+92' },
+  { flag: '🇬🇧', name: 'United Kingdom', code: '+44' },
+  { flag: '🇮🇳', name: 'India', code: '+91' },
+  { flag: '🇦🇺', name: 'Australia', code: '+61' },
+  { flag: '🇨🇦', name: 'Canada', code: '+1' },
+  { flag: '🇦🇪', name: 'UAE', code: '+971' },
+  { flag: '🇸🇦', name: 'Saudi Arabia', code: '+966' },
+  { flag: '🇩🇪', name: 'Germany', code: '+49' },
 ];
 
 export default function PhoneAuthScreen({ navigation }) {
   const { sendPhoneOtp, verifyPhoneOtp } = useContext(AuthContext);
 
-  // Flow step: 1 = Phone Number Entry, 2 = OTP Verification
+  // Step 1: Phone input, Step 2: OTP verification
   const [step, setStep] = useState(1);
 
-  // Form states
-  const [selectedCountry, setSelectedCountry] = useState('+1');
+  // State
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_LIST[0]);
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [verificationId, setVerificationId] = useState(null);
   const [confirmationResult, setConfirmationResult] = useState(null);
 
-  // UI state
+  // Status
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [simulatedSms, setSimulatedSms] = useState(null);
 
-  // Demo / Simulation Mode switch
+  // Demo simulation mode
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Recaptcha Modal state for native platforms
+  // ReCAPTCHA modal for native
   const [recaptchaVisible, setRecaptchaVisible] = useState(false);
 
-  // Countdown timer for OTP resend
+  // Resend timer
   const [countdown, setCountdown] = useState(0);
   const timerRef = useRef(null);
+  const otpInputRef = useRef(null);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -63,7 +69,6 @@ export default function PhoneAuthScreen({ navigation }) {
     return () => clearTimeout(timerRef.current);
   }, [countdown]);
 
-  // Construct complete E.164 phone number
   const getFullPhoneNumber = () => {
     let clean = phoneNumber.trim().replace(/[\s-]/g, '');
     if (clean.startsWith('+')) {
@@ -72,11 +77,11 @@ export default function PhoneAuthScreen({ navigation }) {
     if (clean.startsWith('0')) {
       clean = clean.substring(1);
     }
-    return `${selectedCountry}${clean}`;
+    return `${selectedCountry.code}${clean}`;
   };
 
   /**
-   * STEP 2: Request and receive OTP via SMS
+   * STEP 2: Request & Receive OTP
    */
   const handleRequestOtp = async (token = null) => {
     setErrorMessage('');
@@ -86,7 +91,7 @@ export default function PhoneAuthScreen({ navigation }) {
     const fullPhone = getFullPhoneNumber();
 
     if (!phoneNumber.trim()) {
-      setErrorMessage('Please enter your phone number.');
+      setErrorMessage('Please enter your phone number to continue.');
       return;
     }
 
@@ -106,30 +111,29 @@ export default function PhoneAuthScreen({ navigation }) {
         if (result.confirmationResult) {
           setConfirmationResult(result.confirmationResult);
         }
-
         if (result.demoCode) {
           setSimulatedSms(result.demoCode);
         }
 
         setStep(2);
         setCountdown(60);
-        setSuccessMessage(`OTP code sent via SMS to ${fullPhone}`);
+        setSuccessMessage(`OTP code has been sent via SMS to ${fullPhone}`);
       } else {
         if (
           result.rawError === 'OPERATION_NOT_ALLOWED' ||
           (result.error && result.error.includes('Firebase Console'))
         ) {
           Alert.alert(
-            'Firebase Phone Provider Notice',
-            'Phone Authentication is not enabled yet in your Firebase Console for project "axeonic-be83b".\n\nWould you like to switch to Demo Mode to test the OTP flow right now?',
+            'Firebase Console Setup',
+            'Phone Provider is not enabled yet in your Firebase Console.\n\nSwitch to Demo Mode to test the verification flow right now?',
             [
               { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Enable Demo Mode',
+                text: 'Switch to Demo Mode',
                 onPress: () => {
                   setIsDemoMode(true);
                   setErrorMessage(
-                    'Demo Mode enabled! Tap "Request OTP via SMS" to test with simulated SMS.'
+                    'Demo Mode active! Tap "Send Verification SMS" to test with simulated SMS.'
                   );
                 },
               },
@@ -140,19 +144,19 @@ export default function PhoneAuthScreen({ navigation }) {
       }
     } catch (err) {
       setLoading(false);
-      setErrorMessage(err.message || 'Failed to send OTP.');
+      setErrorMessage(err.message || 'Failed to dispatch verification SMS.');
     }
   };
 
   /**
-   * STEP 4: Verify the OTP and display success or failure message
+   * STEP 4: Verify OTP & Feedback
    */
   const handleVerifyOtp = async () => {
     setErrorMessage('');
     setSuccessMessage('');
 
     if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setErrorMessage('Please enter the complete 6-digit OTP code.');
+      setErrorMessage('Please enter the full 6-digit OTP code.');
       return;
     }
 
@@ -170,33 +174,25 @@ export default function PhoneAuthScreen({ navigation }) {
     setLoading(false);
 
     if (result.success) {
-      setSuccessMessage('🎉 Success! Phone number verified successfully.');
+      setSuccessMessage('🎉 Verified! Phone authentication succeeded.');
       Alert.alert(
-        'Verification Successful',
+        'Success',
         `Phone number ${fullPhone} has been verified successfully!`,
-        [{ text: 'Continue', style: 'default' }]
+        [{ text: 'Continue to App', style: 'default' }]
       );
     } else {
       setErrorMessage(result.error || 'Verification Failed: Invalid OTP code.');
     }
   };
 
-  const handleResendOtp = () => {
+  const handleResend = () => {
     if (countdown > 0) return;
     setOtpCode('');
     handleRequestOtp();
   };
 
-  const handleEditPhoneNumber = () => {
-    setStep(1);
-    setOtpCode('');
-    setErrorMessage('');
-    setSuccessMessage('');
-    setSimulatedSms(null);
-  };
-
-  const handleFillTestNumber = () => {
-    setSelectedCountry('+1');
+  const handleQuickTest = () => {
+    setSelectedCountry(COUNTRY_LIST[0]);
     setPhoneNumber('6505553434');
     setErrorMessage('');
   };
@@ -207,39 +203,43 @@ export default function PhoneAuthScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.iconSymbol}>📱</Text>
+        {/* Top Segmented Navigation Tab */}
+        <View style={styles.topSegmentedBar}>
+          <TouchableOpacity style={[styles.segmentTab, styles.segmentTabActive]}>
+            <Text style={[styles.segmentTabText, styles.segmentTabTextActive]}>
+              📱 Phone OTP
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.segmentTab}
+            onPress={() => navigation.navigate('SignIn')}
+          >
+            <Text style={styles.segmentTabText}>✉️ Email Login</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Hero Header */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeDot}>●</Text>
+            <Text style={styles.heroBadgeText}>SMS VERIFICATION</Text>
           </View>
-          <Text style={styles.title}>Phone Verification</Text>
-          <Text style={styles.subtitle}>
+          <Text style={styles.heroTitle}>
+            {step === 1 ? 'Enter Phone Number' : 'Enter 6-Digit OTP'}
+          </Text>
+          <Text style={styles.heroSubtitle}>
             {step === 1
-              ? 'Enter your mobile number to receive an SMS verification code'
-              : 'Enter the 6-digit verification code sent to your phone'}
+              ? 'We will send a 6-digit one-time code to verify your mobile device.'
+              : `Verification code sent to ${getFullPhoneNumber()}`}
           </Text>
         </View>
 
-        {/* Step Indicator */}
-        <View style={styles.stepIndicatorContainer}>
-          <View style={[styles.stepDot, step >= 1 && styles.stepDotActive]}>
-            <Text style={[styles.stepDotText, step >= 1 && styles.stepDotTextActive]}>1</Text>
-          </View>
-          <View style={[styles.stepLine, step === 2 && styles.stepLineActive]} />
-          <View style={[styles.stepDot, step === 2 && styles.stepDotActive]}>
-            <Text style={[styles.stepDotText, step === 2 && styles.stepDotTextActive]}>2</Text>
-          </View>
-        </View>
-        <View style={styles.stepLabels}>
-          <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>
-            1. Enter Phone
-          </Text>
-          <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>
-            2. Verify OTP
-          </Text>
+        {/* Sleek Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressTrack, step === 1 ? styles.progressHalf : styles.progressFull]} />
         </View>
 
-        {/* Card */}
+        {/* Main Card */}
         <View style={styles.card}>
           {/* Success Banner */}
           {successMessage ? (
@@ -257,169 +257,177 @@ export default function PhoneAuthScreen({ navigation }) {
             </View>
           ) : null}
 
-          {/* Simulated SMS Badge */}
+          {/* Simulated SMS Notification Popup */}
           {simulatedSms ? (
             <TouchableOpacity
-              style={styles.smsBanner}
+              style={styles.smsToast}
               onPress={() => setOtpCode(simulatedSms)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <View style={styles.smsHeader}>
-                <Text style={styles.smsIcon}>💬</Text>
-                <Text style={styles.smsTitle}>Simulated SMS Received</Text>
-                <Text style={styles.smsTapToFill}>Tap to auto-fill</Text>
+              <View style={styles.smsToastHeader}>
+                <Text style={styles.smsToastIcon}>💬</Text>
+                <Text style={styles.smsToastTitle}>Incoming SMS Code</Text>
+                <View style={styles.tapPill}>
+                  <Text style={styles.tapPillText}>Auto-Fill</Text>
+                </View>
               </View>
-              <Text style={styles.smsBody}>
-                Verification Code: <Text style={styles.smsCode}>{simulatedSms}</Text>
+              <Text style={styles.smsToastBody}>
+                Your code is <Text style={styles.smsToastCode}>{simulatedSms}</Text>
               </Text>
             </TouchableOpacity>
           ) : null}
 
-          {/* STEP 1: Phone Number Input */}
+          {/* STEP 1: Phone Input Layout */}
           {step === 1 ? (
             <View>
-              <Text style={styles.sectionHeading}>Step 1: Enter Phone Number</Text>
+              <Text style={styles.inputSectionLabel}>Mobile Number</Text>
 
-              {/* Country Code Selector */}
-              <Text style={styles.label}>Country Prefix</Text>
-              <View style={styles.countryRow}>
-                {COUNTRY_CODES.map((item) => (
+              {/* Integrated Phone Input Box */}
+              <View style={styles.integratedPhoneBox}>
+                <TouchableOpacity
+                  style={styles.countryPickerTrigger}
+                  onPress={() => setCountryPickerVisible(true)}
+                >
+                  <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
+                  <Text style={styles.countryCodeText}>{selectedCountry.code}</Text>
+                  <Text style={styles.countryDropdownArrow}>▾</Text>
+                </TouchableOpacity>
+
+                <View style={styles.verticalDivider} />
+
+                <TextInput
+                  style={styles.phoneNumberInput}
+                  placeholder="650 555 3434"
+                  placeholderTextColor="#A8A29E"
+                  value={phoneNumber}
+                  onChangeText={(text) => {
+                    setPhoneNumber(text);
+                    if (errorMessage) setErrorMessage('');
+                  }}
+                  keyboardType="phone-pad"
+                  autoFocus
+                />
+
+                {phoneNumber ? (
                   <TouchableOpacity
-                    key={item.label}
-                    style={[
-                      styles.countryChip,
-                      selectedCountry === item.code && styles.countryChipSelected,
-                    ]}
-                    onPress={() => setSelectedCountry(item.code)}
+                    onPress={() => setPhoneNumber('')}
+                    style={styles.clearInputBtn}
                   >
-                    <Text
-                      style={[
-                        styles.countryChipText,
-                        selectedCountry === item.code && styles.countryChipTextSelected,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
+                    <Text style={styles.clearInputText}>✕</Text>
                   </TouchableOpacity>
-                ))}
+                ) : null}
               </View>
 
-              {/* Phone Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Mobile Phone Number</Text>
-                <View style={styles.phoneInputRow}>
-                  <View style={styles.prefixBox}>
-                    <Text style={styles.prefixText}>{selectedCountry}</Text>
-                  </View>
-                  <TextInput
-                    style={styles.phoneInput}
-                    placeholder="650 555 3434"
-                    placeholderTextColor="#A8A29E"
-                    value={phoneNumber}
-                    onChangeText={(text) => {
-                      setPhoneNumber(text);
-                      if (errorMessage) setErrorMessage('');
-                    }}
-                    keyboardType="phone-pad"
-                    autoFocus
-                  />
-                  {phoneNumber ? (
-                    <TouchableOpacity
-                      onPress={() => setPhoneNumber('')}
-                      style={styles.clearBtn}
-                    >
-                      <Text style={styles.clearBtnText}>✕</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-                <Text style={styles.helperText}>
-                  Formatted: <Text style={styles.helperPhone}>{getFullPhoneNumber()}</Text>
-                </Text>
+              {/* Quick Preset Buttons */}
+              <View style={styles.quickHelperRow}>
+                <TouchableOpacity style={styles.quickHelperPill} onPress={handleQuickTest}>
+                  <Text style={styles.quickHelperText}>🧪 Use Test Number (+1 650 555 3434)</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Quick Fill Test Number */}
-              <TouchableOpacity style={styles.testNumberBtn} onPress={handleFillTestNumber}>
-                <Text style={styles.testNumberBtnText}>🧪 Use Test Number (+1 650 555 3434)</Text>
-              </TouchableOpacity>
 
               {/* Request OTP Button */}
               <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                style={[styles.primaryActionBtn, loading && styles.btnDisabled]}
                 onPress={() => handleRequestOtp()}
                 disabled={loading}
               >
                 {loading ? (
-                  <View style={styles.buttonLoadingRow}>
+                  <View style={styles.loadingRow}>
                     <ActivityIndicator color="#FFFFFF" size="small" />
-                    <Text style={styles.primaryButtonText}> Requesting SMS OTP...</Text>
+                    <Text style={styles.primaryActionText}> Sending SMS...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.primaryButtonText}>Request OTP via SMS</Text>
+                  <Text style={styles.primaryActionText}>Send Verification SMS →</Text>
                 )}
               </TouchableOpacity>
             </View>
           ) : (
-            /* STEP 3 & 4: OTP Input & Verification */
+            /* STEP 2: 6-Cell Modern OTP Input Layout */
             <View>
-              <View style={styles.phoneSummaryRow}>
-                <View>
-                  <Text style={styles.sectionHeading}>Step 2: Enter Received OTP</Text>
-                  <Text style={styles.sentToText}>
-                    Code sent to: <Text style={styles.sentToPhone}>{getFullPhoneNumber()}</Text>
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={handleEditPhoneNumber} style={styles.editPhoneBtn}>
-                  <Text style={styles.editPhoneBtnText}>✏️ Change</Text>
+              <View style={styles.otpHeaderRow}>
+                <Text style={styles.inputSectionLabel}>6-Digit Verification Code</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setStep(1);
+                    setOtpCode('');
+                    setErrorMessage('');
+                  }}
+                  style={styles.changeNumberLink}
+                >
+                  <Text style={styles.changeNumberText}>Change Number</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* 6-Digit OTP Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>6-Digit OTP Code</Text>
-                <TextInput
-                  style={styles.otpInput}
-                  placeholder="• • • • • •"
-                  placeholderTextColor="#D97706"
-                  value={otpCode}
-                  onChangeText={(text) => {
-                    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
-                    setOtpCode(cleaned);
-                    if (errorMessage) setErrorMessage('');
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoFocus
-                />
-                <Text style={styles.helperText}>Enter the 6-digit code received via SMS</Text>
-              </View>
+              {/* 6 Individual Digit Cells */}
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => otpInputRef.current?.focus()}
+                style={styles.otpCellsContainer}
+              >
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const digit = otpCode[index] || '';
+                  const isCurrent = otpCode.length === index;
+                  const isFilled = Boolean(digit);
+
+                  return (
+                    <View
+                      key={index}
+                      style={[
+                        styles.otpCell,
+                        isCurrent && styles.otpCellCurrent,
+                        isFilled && styles.otpCellFilled,
+                      ]}
+                    >
+                      <Text style={styles.otpCellDigit}>
+                        {digit ? digit : isCurrent ? '│' : '·'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </TouchableOpacity>
+
+              {/* Hidden text input for native keyboard handling */}
+              <TextInput
+                ref={otpInputRef}
+                style={styles.hiddenOtpInput}
+                value={otpCode}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+                  setOtpCode(cleaned);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
 
               {/* Verify OTP Button */}
               <TouchableOpacity
                 style={[
-                  styles.primaryButton,
-                  (loading || otpCode.length !== 6) && styles.buttonDisabled,
+                  styles.primaryActionBtn,
+                  (loading || otpCode.length !== 6) && styles.btnDisabled,
                 ]}
                 onPress={handleVerifyOtp}
                 disabled={loading || otpCode.length !== 6}
               >
                 {loading ? (
-                  <View style={styles.buttonLoadingRow}>
+                  <View style={styles.loadingRow}>
                     <ActivityIndicator color="#FFFFFF" size="small" />
-                    <Text style={styles.primaryButtonText}> Verifying Code...</Text>
+                    <Text style={styles.primaryActionText}> Verifying Code...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.primaryButtonText}>Verify OTP Code</Text>
+                  <Text style={styles.primaryActionText}>Verify & Sign In ✓</Text>
                 )}
               </TouchableOpacity>
 
               {/* Resend Row */}
               <View style={styles.resendRow}>
-                <Text style={styles.resendPrompt}>Didn't receive the SMS? </Text>
+                <Text style={styles.resendPrompt}>Didn't receive code? </Text>
                 {countdown > 0 ? (
-                  <Text style={styles.countdownText}>Resend in {countdown}s</Text>
+                  <Text style={styles.countdownBadge}>Resend in {countdown}s</Text>
                 ) : (
-                  <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
-                    <Text style={styles.resendLink}>Resend OTP</Text>
+                  <TouchableOpacity onPress={handleResend} disabled={loading}>
+                    <Text style={styles.resendActiveText}>Resend SMS</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -428,15 +436,15 @@ export default function PhoneAuthScreen({ navigation }) {
 
           {Platform.OS === 'web' ? <div id="recaptcha-container" /> : null}
 
-          {/* Demo Mode Toggle */}
+          {/* Demo Mode Toggle Card */}
           <View style={styles.modeCard}>
             <View style={styles.modeRow}>
-              <View style={styles.modeTextContainer}>
-                <Text style={styles.modeTitle}>Demo Simulation Mode</Text>
-                <Text style={styles.modeDescription}>
+              <View style={styles.modeInfo}>
+                <Text style={styles.modeTitle}>⚡ Demo Simulation Mode</Text>
+                <Text style={styles.modeDesc}>
                   {isDemoMode
-                    ? 'Simulates SMS locally (Code: 123456)'
-                    : 'Real Firebase SMS (requires Phone provider enabled)'}
+                    ? 'Simulates SMS locally (Default Code: 123456)'
+                    : 'Dispatches real SMS via Firebase Phone Auth'}
                 </Text>
               </View>
               <Switch
@@ -446,38 +454,58 @@ export default function PhoneAuthScreen({ navigation }) {
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
-                trackColor={{ false: '#E5E7EB', true: '#FDE68A' }}
-                thumbColor={isDemoMode ? '#D97706' : '#F5F5F4'}
+                trackColor={{ false: '#E7E5E4', true: '#FDE68A' }}
+                thumbColor={isDemoMode ? '#D97706' : '#FAFAF9'}
               />
             </View>
           </View>
-
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Navigate to Login Page */}
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate('SignIn')}
-          >
-            <Text style={styles.secondaryButtonText}>✉️ Go to Email Login</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Need an email account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.linkText}>Register</Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.footerMuted}>Have an email account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
+            <Text style={styles.footerLink}>Go to Email Login</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Recaptcha Modal */}
+      {/* Country Code Picker Modal */}
+      <Modal
+        visible={countryPickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCountryPickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setCountryPickerVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeaderTitle}>Select Country Prefix</Text>
+            {COUNTRY_LIST.map((c) => (
+              <TouchableOpacity
+                key={c.name}
+                style={[
+                  styles.countryItem,
+                  selectedCountry.code === c.code && selectedCountry.name === c.name && styles.countryItemActive,
+                ]}
+                onPress={() => {
+                  setSelectedCountry(c);
+                  setCountryPickerVisible(false);
+                }}
+              >
+                <Text style={styles.countryItemFlag}>{c.flag}</Text>
+                <Text style={styles.countryItemName}>{c.name}</Text>
+                <Text style={styles.countryItemCode}>{c.code}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ReCAPTCHA Modal for Native Mobile */}
       <FirebaseRecaptchaModal
         visible={recaptchaVisible}
         firebaseConfig={firebaseConfig}
@@ -501,110 +529,112 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 55 : 35,
+    paddingBottom: 30,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  topSegmentedBar: {
+    flexDirection: 'row',
     backgroundColor: '#FEF3C7',
-    borderWidth: 2,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 24,
+    borderWidth: 1,
     borderColor: '#FDE68A',
-    justifyContent: 'center',
+  },
+  segmentTab: {
+    flex: 1,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginBottom: 12,
+    borderRadius: 10,
   },
-  iconSymbol: {
-    fontSize: 30,
+  segmentTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  title: {
-    fontSize: 26,
+  segmentTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#78716C',
+  },
+  segmentTabTextActive: {
+    color: '#92400E',
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  heroBadgeDot: {
+    fontSize: 9,
+    color: '#D97706',
+    marginRight: 6,
+  },
+  heroBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    fontSize: 27,
     fontWeight: '800',
     color: '#292524',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
-  subtitle: {
+  heroSubtitle: {
     fontSize: 14,
     color: '#78716C',
     textAlign: 'center',
-    paddingHorizontal: 12,
     lineHeight: 20,
+    paddingHorizontal: 16,
   },
-  stepIndicatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F5F5F4',
-    borderWidth: 1.5,
-    borderColor: '#E7E5E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepDotActive: {
-    backgroundColor: '#D97706',
-    borderColor: '#B45309',
-  },
-  stepDotText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#A8A29E',
-  },
-  stepDotTextActive: {
-    color: '#FFFFFF',
-  },
-  stepLine: {
-    width: 60,
-    height: 3,
-    backgroundColor: '#E7E5E4',
-    marginHorizontal: 8,
-  },
-  stepLineActive: {
-    backgroundColor: '#D97706',
-  },
-  stepLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  progressContainer: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 2,
     marginBottom: 20,
-    paddingHorizontal: 20,
+    overflow: 'hidden',
   },
-  stepLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A8A29E',
+  progressTrack: {
+    height: '100%',
+    backgroundColor: '#D97706',
+    borderRadius: 2,
   },
-  stepLabelActive: {
-    color: '#B45309',
+  progressHalf: {
+    width: '50%',
+  },
+  progressFull: {
+    width: '100%',
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 22,
     borderWidth: 1.5,
     borderColor: '#FEF3C7',
     shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowRadius: 20,
     elevation: 4,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#292524',
-    marginBottom: 14,
   },
   successBanner: {
     flexDirection: 'row',
@@ -613,7 +643,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#10B981',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 16,
   },
   errorBanner: {
@@ -623,7 +653,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 16,
   },
   bannerIcon: {
@@ -643,234 +673,230 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-  smsBanner: {
+  smsToast: {
     backgroundColor: '#FEF9C3',
     borderWidth: 1.5,
     borderColor: '#FDE047',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 18,
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  smsHeader: {
+  smsToastHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
-  smsIcon: {
+  smsToastIcon: {
     fontSize: 14,
     marginRight: 6,
   },
-  smsTitle: {
+  smsToastTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#854D0E',
     flex: 1,
   },
-  smsTapToFill: {
-    fontSize: 11,
-    color: '#B45309',
-    fontWeight: '700',
+  tapPill: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
-  smsBody: {
+  tapPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  smsToastBody: {
     fontSize: 13,
     color: '#713F12',
   },
-  smsCode: {
-    fontWeight: '800',
-    letterSpacing: 2,
+  smsToastCode: {
+    fontWeight: '900',
     color: '#B45309',
+    letterSpacing: 2,
   },
-  countryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 14,
-  },
-  countryChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  countryChipSelected: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#D97706',
-  },
-  countryChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#78716C',
-  },
-  countryChipTextSelected: {
-    color: '#92400E',
-    fontWeight: '700',
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
+  inputSectionLabel: {
     fontSize: 13,
     fontWeight: '700',
     color: '#44403C',
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: 0.2,
   },
-  phoneInputRow: {
+  integratedPhoneBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFDF5',
     borderWidth: 1.5,
     borderColor: '#FDE68A',
-    borderRadius: 12,
+    borderRadius: 16,
+    height: 54,
   },
-  prefixBox: {
+  countryPickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRightWidth: 1.5,
-    borderRightColor: '#FDE68A',
-    backgroundColor: '#FEF3C7',
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    height: '100%',
   },
-  prefixText: {
+  countryFlag: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  countryCodeText: {
     fontSize: 15,
     fontWeight: '800',
     color: '#78350F',
+    marginRight: 4,
   },
-  phoneInput: {
+  countryDropdownArrow: {
+    fontSize: 10,
+    color: '#B45309',
+  },
+  verticalDivider: {
+    width: 1.5,
+    height: 28,
+    backgroundColor: '#FDE68A',
+  },
+  phoneNumberInput: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingVertical: 12,
     fontSize: 16,
     color: '#1C1917',
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  clearBtn: {
+  clearInputBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
   },
-  clearBtnText: {
+  clearInputText: {
     fontSize: 14,
     color: '#A8A29E',
     fontWeight: '700',
   },
-  helperText: {
-    fontSize: 12,
-    color: '#78716C',
-    marginTop: 6,
+  quickHelperRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    marginBottom: 20,
   },
-  helperPhone: {
+  quickHelperPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  quickHelperText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  primaryActionBtn: {
+    backgroundColor: '#D97706',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  btnDisabled: {
+    opacity: 0.5,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  otpHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  changeNumberLink: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  changeNumberText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#D97706',
   },
-  testNumberBtn: {
-    paddingVertical: 9,
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  testNumberBtnText: {
-    fontSize: 12,
-    color: '#92400E',
-    fontWeight: '700',
-  },
-  phoneSummaryRow: {
+  otpCellsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FEF3C7',
+    marginBottom: 20,
   },
-  sentToText: {
-    fontSize: 13,
-    color: '#78716C',
-    marginTop: 2,
-  },
-  sentToPhone: {
-    fontWeight: '700',
-    color: '#292524',
-  },
-  editPhoneBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  editPhoneBtnText: {
-    fontSize: 12,
-    color: '#92400E',
-    fontWeight: '700',
-  },
-  otpInput: {
-    backgroundColor: '#FFFDF5',
-    borderWidth: 2,
-    borderColor: '#D97706',
+  otpCell: {
+    width: 44,
+    height: 52,
     borderRadius: 12,
-    paddingVertical: 14,
-    fontSize: 26,
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  otpCellCurrent: {
+    borderColor: '#D97706',
+    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  otpCellFilled: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+  },
+  otpCellDigit: {
+    fontSize: 22,
     fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: 10,
     color: '#78350F',
+  },
+  hiddenOtpInput: {
+    position: 'absolute',
+    opacity: 0,
+    width: 1,
+    height: 1,
   },
   resendRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 16,
   },
   resendPrompt: {
     fontSize: 13,
     color: '#78716C',
   },
-  countdownText: {
+  countdownBadge: {
     fontSize: 13,
     color: '#A8A29E',
     fontWeight: '600',
   },
-  resendLink: {
+  resendActiveText: {
     fontSize: 13,
     color: '#D97706',
-    fontWeight: '700',
-  },
-  primaryButton: {
-    backgroundColor: '#D97706',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 6,
-    shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  buttonLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontWeight: '800',
   },
   modeCard: {
     backgroundColor: '#FFFDF5',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 18,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 20,
     borderWidth: 1,
     borderColor: '#FEF3C7',
   },
@@ -879,62 +905,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  modeTextContainer: {
+  modeInfo: {
     flex: 1,
     paddingRight: 10,
   },
   modeTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#44403C',
   },
-  modeDescription: {
+  modeDesc: {
     fontSize: 11,
     color: '#78716C',
     marginTop: 2,
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#FEF3C7',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#A8A29E',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    borderWidth: 1.5,
-    borderColor: '#FDE68A',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-  },
-  secondaryButtonText: {
-    color: '#92400E',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  footer: {
+  footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 24,
   },
-  footerText: {
+  footerMuted: {
     color: '#78716C',
     fontSize: 14,
   },
-  linkText: {
+  footerLink: {
     color: '#D97706',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: '#FEF3C7',
+  },
+  modalHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#292524',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  countryItemActive: {
+    backgroundColor: '#FEF3C7',
+  },
+  countryItemFlag: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  countryItemName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1917',
+  },
+  countryItemCode: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#78350F',
   },
 });
