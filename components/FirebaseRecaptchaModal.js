@@ -47,15 +47,16 @@ export default function FirebaseRecaptchaModal({
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #f3f4f6;
+            background-color: #FFFDF5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding: 16px;
           }
           .card {
             background: #ffffff;
             padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(217, 119, 6, 0.12);
+            border: 1.5px solid #FDE68A;
             text-align: center;
             max-width: 340px;
             width: 100%;
@@ -63,14 +64,16 @@ export default function FirebaseRecaptchaModal({
           h3 {
             margin-top: 0;
             margin-bottom: 8px;
-            color: #111827;
-            font-size: 17px;
+            color: #78350F;
+            font-size: 18px;
+            font-weight: 700;
           }
           p {
             margin-top: 0;
             margin-bottom: 20px;
-            color: #6b7280;
+            color: #78716C;
             font-size: 13px;
+            line-height: 18px;
           }
           #recaptcha-container {
             display: flex;
@@ -116,7 +119,7 @@ export default function FirebaseRecaptchaModal({
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onCancel}>
       <View style={styles.container}>
         <View style={styles.topBar}>
-          <Text style={styles.title}>SMS Security Verification</Text>
+          <Text style={styles.title}>SMS Security Check</Text>
           <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
@@ -146,7 +149,7 @@ export default function FirebaseRecaptchaModal({
             startInLoadingState
             renderLoading={() => (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2563eb" />
+                <ActivityIndicator size="large" color="#D97706" />
                 <Text style={styles.loadingText}>Loading verification...</Text>
               </View>
             )}
@@ -170,7 +173,7 @@ export default function FirebaseRecaptchaModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFDF5',
   },
   topBar: {
     flexDirection: 'row',
@@ -179,14 +182,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#FEF3C7',
+    backgroundColor: '#FFFFFF',
   },
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: '#78350F',
   },
   cancelBtn: {
     paddingVertical: 6,
@@ -194,8 +197,8 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    color: '#ef4444',
-    fontWeight: '600',
+    color: '#DC2626',
+    fontWeight: '700',
   },
   webView: {
     flex: 1,
@@ -204,12 +207,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFDF5',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6b7280',
+    color: '#92400E',
+    fontWeight: '600',
   },
   fallbackContainer: {
     flex: 1,
@@ -219,19 +223,18 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     fontSize: 15,
-    color: '#4b5563',
+    color: '#78716C',
     textAlign: 'center',
     marginBottom: 16,
   },
   closeBtn: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#D97706',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   closeBtnText: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
-

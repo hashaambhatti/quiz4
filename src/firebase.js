@@ -7,14 +7,20 @@ import {
 } from 'firebase/auth';
 import { Platform } from 'react-native';
 
+// Import the functions you need from the SDKs you need
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAh6qaB6_6HcO-wgO2Sc8xDFKx7pkS92-A",
-  authDomain: "axeonic-be83b.firebaseapp.com",
-  projectId: "axeonic-be83b",
-  storageBucket: "axeonic-be83b.firebasestorage.app",
-  messagingSenderId: "306431321388",
-  appId: "1:306431321388:web:0a8f0d6993e0337a293889",
-  measurementId: "G-7YBW1NCCM1"
+  apiKey: "AIzaSyAtYcGSxiQmFpfbI5glvgg7B98eaz-NP-k",
+  authDomain: "quiz4-f3550.firebaseapp.com",
+  projectId: "quiz4-f3550",
+  storageBucket: "quiz4-f3550.firebasestorage.app",
+  messagingSenderId: "667162101960",
+  appId: "1:667162101960:web:434da2f92b738d16e9fdfd",
+  measurementId: "G-DVX6GPL99M"
 };
 
 // Initialize Firebase App
